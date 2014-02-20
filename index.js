@@ -15,7 +15,7 @@ function main(request, response, next) {
 		case 'GET': get(request, response); break;
 		case 'POST': post(request, response); break;
 		case 'DELETE': del(request, response); break;
-		case 'PUT': post(request, response); break;
+		case 'PUT': put(request, response); break;
 	}
 };
 
@@ -41,7 +41,12 @@ function post(request, response) {
 	// TODO: set new session id to the 'session_id' cookie in the response
 	// replace "Logged In" response with response.end(login.hello(newSessionId));
 
-	response.end("Logged In\n");
+	var name = request.body.name;
+	var email = request.body.email;
+	var newSessionId = login.login(name, email);
+
+	response.setHeader('Set-Cookie', 'session_id=' + newSessionId);
+	response.end(login.hello(newSessionId));
 };
 
 function del(request, response) {
@@ -49,16 +54,59 @@ function del(request, response) {
  	// TODO: remove session id via login.logout(xxx)
  	// No need to set session id in the response cookies since you just logged out!
 
-  	response.end('Logged out from the server\n');
+  	var cookies = request.cookies;
+
+  	if(login.isLoggedIn(cookies['session_id']))
+  	{
+  		login.logout(cookies['session_id']);
+  		response.end('Logged out from the server\n');
+  	}
+
+  	else
+  	{
+
+  		response.end('User is not logged in\n');
+  	}
 };
 
 function put(request, response) {
 	console.log("PUT:: Re-generate new seesion_id for the same user");
 	// TODO: refresh session id; similar to the post() function
+var cookies = request.cookies;
+if('session_id' in cookies)
+{
+	var sid = cookies['session_id'];
+	if(login.isLoggedIn(sid))
+	{
+		var name = login.sessionMap[sid].name;
+		var email = login.sessionMap[sid].email;
+		var newSessionId = login.login(name, email);
+		login.logout(sid);
+		response.end('Re-freshed session id' + newSessionId + '\n');
+	}
 
-	response.end("Re-freshed session id\n");
+	else{
+		response.end("Invalid session_id\n");
+		}
+		}
+	else
+	{
+		response.end('Please login via POST\n');
+	}
+
 };
 
 app.listen(8000);
 
 console.log("Node.JS server running at 8000...");
+
+
+
+
+
+
+
+
+
+
+
